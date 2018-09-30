@@ -1,92 +1,85 @@
 \section{Introduction}
-Due to Zynq's unique advantages such as being reconfigurable and low power consumption, various deep learning and acceleration work based on the embedded terminal have been conducted on various in-depth researches based on the platform.
+As its computational complexity, researchers and developers of the DNN (Deep Neural Network) were continuously seeking a suitable platform for implementation, in order to obtain high performance and low power consumption. The Zynq series heterogeneous SoC from Xilinx is able to supporting software/hardware co-designing in one single chip, making it possible to take advantage of software flexibility and hardware acceleration at the same time. Thus, increasing work of the DNN are developed on the Zynq recently. 
 
-In terms of neural network computing architecture, Zhang\cite{zhang2015optimizing} proposed a Roofline method for analyzing overall throughput to obtain the architecture with the best performance and the lowest FPGA resource and parallelism. To optimization the memory access, Shen\cite{ma2017hardware} presented a flexible data buffer solution to ensure the balance between input and weight transmission bandwidth, significantly reduced the memory access for the convolution accelerator, Manoj Alwani\cite{alwani2016fused} presented a by modifying and fusion among layers of data types and enable the sequence of input data on the chip, and through the model evaluation of the data on the intermediate results. In terms of matrix fast multiplication, Liang\cite{lu2017evaluating} proposed a compute architecture using Winograd algorithm to realize convolution neural network, and adopted the row buffer structure to effectively reuse the characteristics between different data blocks, so as to improve the final running speed. In terms of neural network model compression, Han\cite{han2015deep} designed a quantitative pruning method based on neural network model to reduce the weight and the number of calculates for neural network.
+Those works of DNN's research based on Zynq mainly focus on four topics as follows. 
+1) Micro-architecture designing for acceleration[7-18]. Different hardware structures were proposed such as Processing Elements, solicit arrays and pipeline to get higher performance with consideration of scalability. 
+2) Memory bandwidth optimization[]. Such as reducing memory accessing frequency through storing intermediate result on chip[13,14], or enhancing the burst length by data reordering[7,11].
+3) Matrix multiplication optimization[]. Such as Winograd, FFT transformation etc.
+4) Model compression, pruning and quantization[]. those work concentrated on decreasing the complexity of computation.
 
-The research for deep learning acceleration based on embedded platform from different aspects, such as Fast matrix multiplication algorithm ,Compression and computing structure plays a role of promotion,but the bulk of the research is not open source,  It makes further researchers need to spend time cost on the basis of existing research, rather than on further innovation work.
+However, although the heterogeneous SoC coupled with HLS(High Level Synthesis) improves description abstraction of system designing and frees users from non-trivial FPGA driver issues, it is more suitable for system-level programmers. It is because the programmer has to grasp knowledge of algorithm description, architecture and interfaces, physical address allocation, software drivers implementating and application software implementing. The drawback of this design flow is that system-level programmers generally have more architectural knowledge about hardware and software but fewer knowledge about algorithms and applications, and vise versa.
 
-At present , the research and application for deep learning based on Zynq platform have some deficiencies:it need developers are familiar with the deep learning algorithm and the hardware and software system, the Zynq platform using the threshold is high, causes the limited depth of developers, affected the Zynq with the depth study of large-scale embedded applications.therefore Xilinx create Pynq project, support Python in deep learning algorithm research at embedded platform, hoping to expand user numbers.
+In order to expand the audience of zynq-based development ecosystem, Xilinx proposed PYNQ project, an open-source project that makes it easy to design embedded systems with Zynq SoCs. Using the Python language and libraries, designers can exploit the benefits of programmable logic and microprocessors in Zynq to build more capable and exciting embedded systems.
 
-Pynq is a developed platform for developing software with Python to accelerate the AI algorithms. It supports the use and development of various Python algorithms library, so that developers and researchers can focus more on the application of software algorithms rather than the development of the underlying hardware. Pynq purpose is through to the Python language support, expand the number of users on Zynq system, but based on Pynq,AI research of accelerating there are design elements, the research process is difficult, the workload is relatively cumbersome, to physical, from obtaining and using the Python language until the underlying hardware, models, diversity and accuracy, framework and the corresponding fixed-point quantitative tool use, overall demand by the tool resources and computing resources scattered and time-consuming, cause contribution has been not effectively improve the number of developers.
+Neverthless, the success of PYNQ will rely on the abundance of libraries provided online, those are developed and submitted by the HDL/HLS designer. As for the DNN, HDL/HLS designers need to deal with non-trivial issues to develop and submit an FPGA-accelerated library, such as Neural Network model selection, quantization, re-tuning, hardware implementation, architectural designing, bitstream generation and software-hardware co-debugging etc. Many resources and tools are necessary to do all these work above such as datasets, deep learning framework, fixed-point quantitative tool, the Vivado toolkit, Zynq-based FPGA devices and boards. Generally, HDL/HLS designers need to learn and establish the developing environment including all these factors distributed everywhere by themselves from scratch, which is time-consuming and worthless. It prevents more contributors going into this field objectively.
 
-In order to solve the above problems, this paper proposes to set up a comprehensive platform to integrate all the elements involved in the research at the same platform. Researchers only need to connect to the Internet to conduct deep learning acceleration research based on Pynq.
+Thus, this paper proposes a PYNQ-compliant online platform that integrates all necessary factors including Zynq devices for the Zynq-based DNN developer, so as to make it easier to contribute libraries under the PYNQ ecosystem. HDL/HLS designers will be able to access all resources they needed via the Internet and finish all jobs one-stop.
 
-\begin{figure}
-\includegraphics[height=7.2in, width=3.6in]{figure_0}
-\caption{XXX}
-\end{figure}
-
-The main work of this paper is as follows:
+The main contribution of this paper is as follows:
 \begin{enumerate}
-    \item model quantification tools required under different deep learning frameworks, official data sets required by model training, vivado-hls development tool chain, and integration of different deep learning frameworks.
-    \item With Pynq and other original Zynq series FPGA embedded platforms, virtual dynamic mapping will be carried out in the cloud for user development and research.
-    \item Taking YOLOv2, the current mainstream deep-learning target detection algorithm, as an example, we demonstrate the research on the FPGA cloud hardware platform by using pynq-based deep learning acceleration tool.
+    \item Establishing a PYNQ-compliant online platform. It brings all necessary datasets, tools, software and hardware resources together for the Zynq-based DNN developer, improving the PYNQ ecosystem.
+    \item Taking YOLOv2, one of the current mainstream deep-learning algorithm, as an example to demonstrate the convenience of the online platform and contribute an open source project for PYNQ.
 \end{enumerate}
 
-\section{Elements involved in AI development - based Pynq}
-The development of the embedded platform based on Pynq requires a lot of basic knowledge of software and hardware to integrate with the overall knowledge elements. After obtaining the model, a large number of labeled data sets are required to train the network model, The official data sets are complex and the model transformation under the framework of various neural networks is also difficult.
+\section{Factors involved in Zynq-based DNN development}
+ When developing a DNN accelerator based on Zynq, the open source project, deep learning framework, datasets, fixed-point quantitative tool, the Vivado toolkit, Zynq-based FPGA devices and boards are all possibly used. This section introduces why all these factors should be put together for users convenience.
+
+\subsection{Deep Learning Framework}
+There are several mainstream frameworks such as Tensorflow, Caffe can be used. However, generally users need a plenty of time to establish the wanted framework on their own computers. 
+
+\subsection{Datasets}
+Besides training, when developing a Zynq-based DNN system, datasets are often necessary for weights tuning or re-tuning during the process of compression or pruning. The final optimized system also needs datasets to verify its correctness and accuracy. Generally, although some popular open datasets such as ImageNet or COCO can be found and downloaded from their official website, it is time-consuming for HDL/HLS designer instead of a deep learning researcher to find and get the suitable dataset distributed in different websites. Furthermore, it is even hard to get a suited dataset for emerging variant of the DNN model. 
+
+For instance, the dataset of ImageNet has 13,000 training images (732 to 1,300 per class), 100,000 test images (100 per class) and 50,000 verified images (50 per class), its size is more than 100 Gigabytes.
 
 \begin{figure*}
 \includegraphics[height=3in, width=6in]{figure_1}
 \caption{A sample black and white graphic.}
 \end{figure*}
 
-\subsection{Official datasets}
-The official data set required by the research direction of neural network, such as the COCO data set of target detection,Professional data sets such as ImageNet data sets of picture classification. And target detection COCO data set.
+\subsection{Quantization tools}
+One of the approache generally used for Zynq-based DNN optimization is bit-width compression of the datapath. Users can use one suitable tool to do datapath compression instead of doing it mannually. 
+Presently, there are three kinds of quantization tools those are low-accuracy floating-point approximation, dynamic fixed-point approximation and weighting exponential fixed-point approximation. It is also a little difficult for HDL/HLS designers to find the suitable tool distributed everywhere.
 
-Target detection COCO data set is Microsoft's team to establish a subtitles can be used to identify, segmentation, image data sets, the data sets to scene understanding as the goal, mainly from the complex daily interception in the scene, the image of target position by accurate segmentation of calibration. Images include class 91 targets, 328,000 images and 2,500,000 labels.
+\subsection{Vivado toolkit}
+The Vivado toolkit for zynq-based devolopment including Vivado HLS, Vivado and SDK Xilinx is a neccessity for Zynq-based DNN developers. With continously increasing of the toolkit size, it is becoming harder to install and execute efficiently on individual user's own computer.
 
-ImageNet is the first large-scale image data set introduced in 2010; The data set was stable in 2012. It contains an image of 1000 classes. The ImageNet category has a hierarchy. Select 1000 classes so that there is no overlap in the ImageNet hierarchy. And the ImageNet dataset contains many fine-grained categories, including 120 different breeds of dogs. There are 13,000 training images (732 to 1,300 per class), 100,000 test images (100 per class) and 50,000 verified images (50 per class). The ImageNet challenge accuracy report USES two metrics :top 5 and top 1 errors. A top-five error means that if any of the top five is correct, it is considered a proper classification. The top 1 items requiring the highest scores are correct.
+\subsection{Zynq-based FPGA devices and boards}
+After simulation, synthesis and bitstream generation, FPGA devices or boards will be needed for verifying the running system with the Zynq-based DNN. In generall case, developers and researchers need to prepare their Zynq-based boards such as Zedboard etc. It is expensive to prepare and update the neccessary FPGA board with time and money.
 
-\subsection{Fixed-point quantitative open source tools}
-At present, there are three kinds of fixed-point tools for floating-point model, which are low-number floating-point approximation, dynamic fixed-point approximation and weighting exponential fixed-point approximation.
+As introduced above, Zynq-based DNN developers today still get facors needed for their research and development in a clumsy way. It impedes the Zynq-based high efficiency computing platform to be used in more embedded AI applications. 
 
-\subsubsection{Low bit wide floating point approximation representation}
-The low point wide floating point number approximation completely conforms to the IEEE754 floating point number representation standard, and the low point wide floating point accuracy is used to approximate the high point wide floating point data. In addition to reducing the model size, this method generally uses floating point number calculation, which has little effect on the precision, and it does not help the hardware developers to improve the calculation speed.
+\section{Pynq-compliant online plarform for DNN development}
 
-\subsubsection{Low bit wide floating point approximation representation}
-The low point wide floating point number approximation completely conforms to the IEEE754 floating point number representation standard, and the low point wide floating point accuracy is used to approximate the high point wide floating point data. In addition to reducing the model size, this method generally uses floating point number calculation, which has little effect on the precision, and it does not help the hardware developers to improve the calculation speed.
+\begin{figure}
+\includegraphics[height=1.7in, width=3.4in]{openhec}
+\caption{Structure of OpenHEC-PYNQ platform}
+\end{figure}
 
-\subsubsection{Dynamic fixed point accuracy quantification}
-Each number n of dynamic fixed-point precision quantification represents the specific process as shown in formula 1:
-\begin{equation}
-  n = (-1)^s * 2^{-fl} * \sum_{i=0}^{B-2} 2^i * x_i
-\end{equation}
-B here is a bit wide, s is the sign bit, f1 is fractions length, x is the mantissa, n actual values, by dynamic fixed-point quantitative floating point precision fitting model, through the determination of each layer of fixed-point different fixed-point allocation, each network layer can be divided into three groups: one for the input layer, one for the weight, one for the output layer, it can better cover the dynamic range of activation and weights.
+As shown in Fig.1, in this paper, a Pynq-compliant online plarform for DNN development, called OpenHEC-PYNQ for memorizing, was proposed to sovle the problem above. In this figure, OpenHEC is an FPGAs cloud platform at the website http://www.iopenhec.com, which provides remote accessing of the FPGA boards via the Internet. OpenHEC-PYNQ establishes the Pynq-compliant online plarform for DNN development through deploying Docker-based software tools such as Vivado toolkit and Docker-based PYNQ Z1/Z2 boards on the OpenHEC platform. As shown in this figure, users can use the Vivado toolkit, deep learning framework and quantization tool online during the Zynq-based DNN developing. Then, the bitsteam can also be downloaded and executed in PYNQ boards online conveniently via OpenHEC.
+Other resources like open source projects at Github, datasets, PYNQ project and so on can be accessed via hyperlinks collected in OpenHEC. It avoids users to spend much time to find all the resources blindly.
+At OpenHEC-PYNQ, the developer uploads the model to the cloud platform, and calls the framework and dataset online to train and test the network model. Developers can then use the tools provided by the platform to quantify the model and perform hardware design and optimization on the cropped network.
 
-\subsubsection{weight exponential}
-Convolution multiplication is replaced by Left shift operator and Right shift operator. The fully connected layer and convolution layer are composed of increasing and multiplying, where the multiplier requires more chip area. This prompted previous studies to eliminate all multipliers by using integer weights shift operator. These weights can be thought of as minifloat Numbers with zero mantissa. The multiplication between the weights and the layer activation becomes displacement, the weight exponential represents the specific process as shown in formula (2), s is the sign bit ,exp is the power of the fixed point data.
-\begin{equation}
-  n = (-1)^s * 2^{exp}
-\end{equation}
+Figure xx shows the Docker-based software tools of OpenHEC-PYNQ, users can open and use the corresponding tool by double-click the icon.
 
-\subsection{Vivado-HLS development tool chain}
-Vivado-HLS tool chain for Xilinx FPGA hardware logic development tools, developers use the development tool chain for hardware logic description.
+Figure xx shows the entrance of OpenHEC-PYNQ for a specific PYNQ Z2 board. Once entering, the detailed information about the board can be viewed. The board can be accessed and used by just clicking the "using FPGA" button.
 
-\subsection{Virtualized Pynq cloud hardware platform}
-Multi-block Pynq cloud sharing by providing network nodes for users to verify current research results.
+\begin{figure}
+\includegraphics[height=7in, width=3.3in]{figure_0}
+\caption{workflow}
+\end{figure}
 
-At present, hardware developers usually study the computing architecture of AI algorithm by using all the above development elements. However, it will take a lot of time for them to collect all the elements for research. Therefore, it is vital to build a platform integrating all elements both and software and hardware for the development and research of neural network algorithm.
+\section{Implementing YOLOv2 on Openhec-Pynq}
+\subsection{About YOLOv2}
+You only look once (YOLO) is a state-of-the-art, real-time object detection system. Using a novel, multi-scale training method the same YOLOv2 model can run at varying sizes, offering an easy tradeoff between speed and accuracy [21]. Currently, it has been recognized and invested in the field of ADAS [22, 23].
 
-\section{AI open source platform architecture based on Pynq}
+\subsection{Framework}
+Darknet is an open source neural network framework written in C and provides the model of YOLOv2 [24]. We analyze the YOLOv2 network structure in Darknet, extract the required parameters and weights of each layer, and rewrite the C Model. Then, we verify the accuracy of the C model under float32 precision through the data set on the cloud platform.
 
-\subsection{Ideal architecture}
-The ideal architecture display on Figure 0.The developer uploads the model to the cloud platform, and calls the framework and data set owned by the cloud platform to train and test the network model. Developers can then use the tools provided by the platform to quantify the model and perform hardware design and optimization on the cropped network.
+\subsection{Quantization}
+Since the Darknet framework itself does not have the quantization tool like Tensorflow or Pytorch. According to \cite{qiu2016going, shan2016dynamic}, we implement the precision conversion from float32 to fixed-16. Then, we verify the accuracy of the C model under fixed-16 precision.
 
-\subsection{Hardware cloud platform}
-The open source cloud hardware platform saves developer time cost by integrating research elements. The open source tool and implementation code allow developers to conduct multi-scale and multi-level research based on Pynq deep learning acceleration.Display on Figure 1.
-
-\subsection{Tool integration}
-The floating-point operation in the AI algorithm will consume a lot of resources in the hardware design. Due to the robustness of the algorithm itself \cite{courbariaux2014low}, fixed-point operations can be used instead of floating-point operations under the condition of ensuring less loss of precision or even lossless. At present, such methods have become one of the main steps of current hardware acceleration. Therefore, the platform also integrates a variety of quantitative tools under the neural network framework, which greatly reduces the time cost for researchers to find quantitative algorithms and tools.
-
-\section{Openhec-Pynq}
-The cloud platform is equipped with the Darknet framework, in which we analyzes the YOLOv2 network structure, extracts the required parameters and weights of each layer, and writes the C Model for HLS.
-
-In addition, since reference \cite{qiu2016going, shan2016dynamic} has shown that low-precision quantization is sufficient for CNN implementation, in addition to using 32-bit to represent intermediate results, 16-bit fixed-point are used for input data, weights, and output data.
-
-After verification by software simulation, the HLS-based accelerator design and optimization are performed. Finally, we implemented control and communication for the HLS-based YOLOv2 accelerator through Python for easy use on the Pynq platform.
-
-\subsection{Design and Optimization of YOLOv2 Accelerator Based on FPGA}
+\subsection{Optimizing YOLOv2 on Zynq FPGA}
 According to the analysis of the YOLOv2 network, most layers are serially processed, except for the routing layer. The routing layer can be implemented by setting a specific address in advance. 
 
 From an accelerator perspective, the work required is to interact with memory in order (reading memory data, processing data, and then writing back memory data). Since the amount of data input and output is very large, loop tiling technique is always applied to reuse data and reduce memory access times, which tiles the convolution loop R, C, M, N to Tr, Tc, Tm ,Tn\cite{zhang2015optimizing}.
@@ -94,7 +87,7 @@ From an accelerator perspective, the work required is to interact with memory in
 The overall architecture of the accelerator is shown below:
 
 \begin{figure}
-\includegraphics[height=3.1in, width=3.6in]{figure_2}
+\includegraphics[scale=0.43]{figure_2}
 \caption{XXX}
 \end{figure}
 
@@ -126,7 +119,7 @@ The Data Scatter module is designed to generate the corresponding write address 
     FPGA Board(FPGA) & VC707(Virtex7 485t) & Zedboard(XC7Z020) & Pynq(XC7Z020) & Pynq(XC7Z020)& Pynq(XC7Z020)\\
     Clock(MHz) & 143 & 100 & 100 & 100 & 130\\
     Precision & Fixed-16 & Fixed-16 & Fixed-8 & Float-32 & Fixed-16\\
-    Power(W) & - & - & - & 2.39 & 2.71\\
+    Power(W) & - & 1.75 & 1.90 & 2.39 & 2.71\\
     Operations(GOP) & 3.09 & - & $4.58*10^{-3}$ & 29.47 & 29.47\\
     Performance(GOP/s) & 64.86 & 12.73 & 2.56 & 2.53 & 11.39\\
     Power Efficiency(GOP/s/W) & - & 7.27 & 1.35 & 1.06 & 4.20\\
@@ -143,7 +136,10 @@ The acceleration strategy of convolutional layer is similar to \cite{zhang2015op
 \subsubsection{Ping-Pong operation}
 Similar to \cite{zhang2015optimizing}, the design implements ping-pong buffers to overlap the delay of reading input feature maps and weights, writing output feature maps and calculation, which greatly improves the dynamic utilization of the computing engines.
 
-\section{Comparison}
+\subsection{Python interface}
+After completing the accelerator design, we used Python to write the driver for the accelerator. Verify the accuracy of the actual designed accelerator through the Python interface.
+
+\section{Results and Comparison}
 Two data precision types of float32 and dynamic fixed-point 16-bit have been designed. Experiments show that floating point addition in HLS requires three DSP resources, floating point multiplication requires two DSPs; fixed point 16-bit multiplication requires one DSP, and fixed-point 16-bit addition can be implemented only using LUT. After placing and routing, resource consumptions of float32 (Tn=3, Tm=9, Tr=26, Tc=52) and fixed-16 (Tn=2, Tm=32, Tr=26, Tc=26) are shown as table 1.
 
 According to the current design, DSP and BRAM are more expensive. The cost of DSP can be further reduced (there are many bit-width redundant multiplications), and the BRAM cost can be reduced. (As Shen \cite{shen2017maximizing} said, BRAM allocates an exponential size of 2 in HLS. Actually, many BRAMs are redundant.).
@@ -157,58 +153,7 @@ In \cite{venieris2016fpgaconvnet}, the dynamic reconfiguration is used to proces
 \cite{ma2017hardware} implemented tiny-yolov1 on a middle-range FPGA. The tiny-yolov1 model is relatively backward, and the FPGA used has a large power consumption, which is not suitable for embedded applications.
 
 \section{Conclusions}
-This paragraph will end the body of this sample document.
-Remember that you might still have Acknowledgments or
-Appendices; brief samples of these
-follow.  There is still the Bibliography to deal with; and
-we will make a disclaimer about that here: with the exception
-of the reference to the \LaTeX\ book, the citations in
-this paper are to articles which have nothing to
-do with the present subject and are used as
-examples only.
-%\end{document}  % This is where a 'short' article might terminate
-
-
-
-\appendix
-%Appendix A
-\section{Headings in Appendices}
-The rules about hierarchical headings discussed above for
-the body of the article are different in the appendices.
-In the \textbf{appendix} environment, the command
-\textbf{section} is used to
-indicate the start of each Appendix, with alphabetic order
-designation (i.e., the first is A, the second B, etc.) and
-a title (if you include one).  So, if you need
-hierarchical structure
-\textit{within} an Appendix, start with \textbf{subsection} as the
-highest level. Here is an outline of the body of this
-document in Appendix-appropriate form:
-\subsection{Introduction}
-\subsection{The Body of the Paper}
-\subsubsection{Type Changes and  Special Characters}
-\subsubsection{Math Equations}
-\paragraph{Inline (In-text) Equations}
-\paragraph{Display Equations}
-\subsubsection{Citations}
-\subsubsection{Tables}
-\subsubsection{Figures}
-\subsubsection{Theorem-like Constructs}
-\subsubsection*{A Caveat for the \TeX\ Expert}
-\subsection{Conclusions}
-\subsection{References}
-Generated by bibtex from your \texttt{.bib} file.  Run latex,
-then bibtex, then latex twice (to resolve references)
-to create the \texttt{.bbl} file.  Insert that \texttt{.bbl}
-file into the \texttt{.tex} source file and comment out
-the command \texttt{{\char'134}thebibliography}.
-% This next section command marks the start of
-% Appendix B, and does not continue the present hierarchy
-\section{More Help for the Hardy}
-
-Of course, reading the source code is always useful.  The file
-\path{acmart.pdf} contains both the user guide and the commented
-code.
+PYNQ project from Xilinx is trying to partition developers on Zynq SoCs into two categories: Software developers using Python through calling libraries of hardware acceleration to get high performance and low power consumption. Hardware developers who use HDL/HLS to design and contribute libraries of hardware acceleration. The success of this ecosystem denpends on the abundance of libraries provided. This paper proposed a Pynq-compliant online plarform for DNN development to make the HDL/HLS designer to contribute libraries of hardware acceleration much easier. It will potentially improve the ecosystem of PYNQ and help more embedded AI applications use the Zynq-based high-efficiency computational engine.
 
 \begin{acks}
   The authors would like to thank Dr. Yuhua Li for providing the
